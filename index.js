@@ -8,8 +8,16 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
-connectDB();
-
+connectDB()
+  .then(() => {
+    app.listen(process.env.PORT || 5000, () => {
+      console.log("Server running 🚀");
+    });
+  })
+  .catch((err) => {
+    console.error("DB connection failed ❌", err);
+  });
+  
 app.use(cors({
   origin: "*"
 }));
