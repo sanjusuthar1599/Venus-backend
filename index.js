@@ -38,7 +38,8 @@ connectDB()
     });
   })
   .catch((err) => {
-    console.error("DB connection failed ❌", err);
+    console.error("DB connection failed ❌", err.message);
+    process.exit(1);
   });
 
 app.use(cors(corsOptions));
