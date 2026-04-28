@@ -8,16 +8,23 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = [
+const envOrigins = String(process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([
   "http://localhost:5173",
-  "https://venus-backend-urp2.onrender.com",
-];
+  "http://127.0.0.1:5173",
+  ...envOrigins,
+]);
 
 const corsOptions = {
   origin(origin, callback) {
     // Allow same-origin/server-to-server requests (no Origin header)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    if (/^https:\/\/.*\.netlify\.app$/i.test(origin)) return callback(null, true);
+    if (/^https:\/\/.*\.vercel\.app$/i.test(origin)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
