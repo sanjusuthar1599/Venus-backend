@@ -18,13 +18,20 @@ const allowedOrigins = new Set([
   ...envOrigins,
 ]);
 
+function isAllowedOrigin(origin) {
+  return (
+    allowedOrigins.has(origin) ||
+    /^https:\/\/.*\.netlify\.app$/i.test(origin) ||
+    /^https:\/\/.*\.vercel\.app$/i.test(origin) ||
+    /^https:\/\/.*\.onrender\.com$/i.test(origin)
+  );
+}
+
 const corsOptions = {
   origin(origin, callback) {
     // Allow same-origin/server-to-server requests (no Origin header)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.has(origin)) return callback(null, true);
-    if (/^https:\/\/.*\.netlify\.app$/i.test(origin)) return callback(null, true);
-    if (/^https:\/\/.*\.vercel\.app$/i.test(origin)) return callback(null, true);
+    if (isAllowedOrigin(origin)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -62,3 +69,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/post", postRoutes);
+
+app.use((err, req, res, next) => {
+  if (err.message?.startsWith("CORS blocked")) {
+    return res.status(403).json({ message: err.message });
+  }
+  next(err);
+});

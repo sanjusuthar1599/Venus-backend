@@ -18,6 +18,12 @@ const login = (req, res) => {
     });
   }
 
+  if (!process.env.JWT_SECRET) {
+    return res.status(503).json({
+      message: "Admin login is not configured. Set JWT_SECRET in the API .env file.",
+    });
+  }
+
   if (!email || !password) {
     return res
       .status(400)
