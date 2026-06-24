@@ -2,6 +2,7 @@ const path = require("path");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const postRoutes = require("./routes/postRoutes");
 const blogRoutes = require("./routes/blogRoutes");
@@ -32,7 +33,6 @@ function isAllowedOrigin(origin) {
 
 const corsOptions = {
   origin(origin, callback) {
-    // Allow same-origin/server-to-server requests (no Origin header)
     if (!origin) return callback(null, true);
     if (isAllowedOrigin(origin)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
@@ -40,17 +40,6 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
-
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("DB connection failed ❌", err.message);
-    process.exit(1);
-  });
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
@@ -69,6 +58,14 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+/** Lightweight health check — responds before DB is ready (keeps Render awake). */
+app.get("/api/health", (req, res) => {
+  const dbReady = mongoose.connection.readyState === 1;
+  res.status(200).json({
+    ok: true,
+    db: dbReady ? "connected" : "connecting",
+  });
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/post", postRoutes);
@@ -81,4 +78,12 @@ app.use((err, req, res, next) => {
     return res.status(403).json({ message: err.message });
   }
   next(err);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+connectDB().catch((err) => {
+  console.error("DB connection failed ❌", err.message);
 });
